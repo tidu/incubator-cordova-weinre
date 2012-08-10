@@ -52,6 +52,8 @@ MessageLevel =
     Error:   3
     Debug:   4
 
+ConsoleQueue = []
+
 #-------------------------------------------------------------------------------
 module.exports = class Console
 
@@ -66,9 +68,9 @@ module.exports = class Console
         UsingRemote = not not value
 
         if UsingRemote
-            window.console = RemoteConsole
-        else
-            window.console = OriginalConsole
+            tmp = ConsoleQueue[..]
+            ConsoleQueue = []   
+            (fn() for fn in tmp)
 
         oldValue
 
@@ -91,86 +93,132 @@ module.exports = class Console
 
     #---------------------------------------------------------------------------
     log: ->
-        @_generic MessageLevel.Log, [].slice.call(arguments)
+        args = [].slice.call(arguments)
+        if UsingRemote
+            @_generic MessageLevel.Log, args
+        else
+            ConsoleQueue.push(() -> RemoteConsole._generic(MessageLevel.Log, args))
 
+        OriginalConsole.log(args)
+        
     #---------------------------------------------------------------------------
     debug: ->
-        @_generic MessageLevel.Debug, [].slice.call(arguments)
+        args = [].slice.call(arguments)
+        if UsingRemote
+            @_generic MessageLevel.Debug, args
+        else
+            ConsoleQueue.push(() -> RemoteConsole._generic(MessageLevel.Debug, args))
 
+        OriginalConsole.debug(args)
+        
     #---------------------------------------------------------------------------
     error: ->
-        @_generic MessageLevel.Error, [].slice.call(arguments)
+        args = [].slice.call(arguments)
+        if UsingRemote
+            @_generic MessageLevel.Error, args
+        else
+            ConsoleQueue.push(() -> RemoteConsole._generic(MessageLevel.Error, args))
+
+        OriginalConsole.error(args)
+        
 
     #---------------------------------------------------------------------------
     info: ->
-        @_generic MessageLevel.Log, [].slice.call(arguments)
+        args = [].slice.call(arguments)
+        if UsingRemote
+            @_generic MessageLevel.Log, args
+        else
+            ConsoleQueue.push(() -> RemoteConsole._generic(MessageLevel.Log, args))
+
+        OriginalConsole.error(args)
+        
 
     #---------------------------------------------------------------------------
     warn: ->
-        @_generic MessageLevel.Warning, [].slice.call(arguments)
+        args = [].slice.call(arguments)
+        if UsingRemote
+            @_generic MessageLevel.Warning, args
+        else
+            ConsoleQueue.push(() -> RemoteConsole._generic(MessageLevel.Warning, args))
+
+        OriginalConsole.warn([].slice.call(arguments))
 
     #---------------------------------------------------------------------------
     dir: ->
+        OriginalConsole.dir([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     dirxml: ->
+        OriginalConsole.dirxml([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     trace: ->
+        OriginalConsole.trace([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     assert: (condition) ->
+        OriginalConsole.assert([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     count: ->
+        OriginalConsole.count([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     markTimeline: (message) ->
+        OriginalConsole.markTimeline([].slice.call(arguments))
         Timeline.addRecord_Mark message
 
     #---------------------------------------------------------------------------
     lastWMLErrorMessage: ->
+        OriginalConsole.lastWMLErrorMessage([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     profile: (title) ->
+        OriginalConsole.profile([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     profileEnd: (title) ->
+        OriginalConsole.profileEnd([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     time: (title) ->
+        OriginalConsole.time([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     timeEnd: (title) ->
+        OriginalConsole.timeEnd([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     group: ->
+        OriginalConsole.group([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     groupCollapsed: ->
+        OriginalConsole.groupCollapsed([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
     #---------------------------------------------------------------------------
     groupEnd: ->
+        OriginalConsole.groupEnd([].slice.call(arguments))
         Weinre.notImplemented arguments.callee.signature
 
 #-------------------------------------------------------------------------------
 RemoteConsole   = new Console()
 OriginalConsole = window.console
-
 RemoteConsole.__original   = OriginalConsole
 OriginalConsole.__original = OriginalConsole
+window.console = RemoteConsole
 
 #-------------------------------------------------------------------------------
 require("../common/MethodNamer").setNamesForClass(module.exports)
